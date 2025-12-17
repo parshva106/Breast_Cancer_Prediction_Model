@@ -8,7 +8,7 @@ import random
 # Load the trained model
 # --------------------------
 model_path = "best_ml_model.pkl"
-with open(best_ml_model, "rb") as file:
+with open(best_ml_model.pkl, "rb") as file:
     model = pickle.load(file)
 
 # --------------------------
