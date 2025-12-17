@@ -92,15 +92,26 @@ for i, feature in enumerate(feature_names):
 # --------------------------
 if st.button("🔍 Predict"):
     try:
-        input_data = np.array(inputs).reshape(1, -1)
+        # Convert inputs to numpy array
+        inputs_array = np.array(inputs)
+
+        # 🔧 FIX: Add missing feature if model expects 31
+        if hasattr(model, "n_features_in_"):
+            expected_features = model.n_features_in_
+            if inputs_array.shape[0] < expected_features:
+                missing = expected_features - inputs_array.shape[0]
+                inputs_array = np.append(inputs_array, [0.0] * missing)
+
+        input_data = inputs_array.reshape(1, -1)
+
         prediction = model.predict(input_data)[0]
 
-        # Probability (if supported)
+        # Confidence (if available)
         confidence = None
         if hasattr(model, "predict_proba"):
             confidence = np.max(model.predict_proba(input_data)) * 100
 
-        # Correct mapping
+        # Correct label mapping
         result = "Benign" if prediction == 1 else "Malignant"
 
         st.subheader("🩺 Prediction Result")
