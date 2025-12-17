@@ -1,123 +1,101 @@
 import streamlit as st
-import pickle
 import numpy as np
+import pandas as pd
+import pickle
+import random
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Breast Cancer Prediction",
-    page_icon="🧬",
-    layout="wide"
-)
+# --------------------------
+# Load the trained model
+# --------------------------
+model_path = "best_ml_model.pkl"
+with open(best_ml_model, "rb") as file:
+    model = pickle.load(file)
 
-# ---------------- DARK + COLORFUL THEME ----------------
+# --------------------------
+# Streamlit UI
+# --------------------------
+st.set_page_config(page_title="Breast Cancer Prediction", page_icon="🎗️", layout="wide")
+
+st.title("🎗️ Breast Cancer Prediction App")
 st.markdown("""
-<style>
-body, .main {
-    background-color: #0b0b0b;
-}
-h1, h2, h3 {
-    color: #00e5ff;
-}
-label, p {
-    color: #ffffff;
-}
-.stButton>button {
-    background: linear-gradient(90deg, #ff00cc, #3333ff);
-    color: white;
-    font-size: 18px;
-    border-radius: 12px;
-    padding: 0.6em 1.8em;
-    border: none;
-}
-.stButton>button:hover {
-    transform: scale(1.05);
-}
-.result {
-    padding: 25px;
-    border-radius: 15px;
-    font-size: 22px;
-    text-align: center;
-}
-.benign {
-    background-color: #003d2b;
-    color: #00ff99;
-}
-.malignant {
-    background-color: #3d0000;
-    color: #ff4c4c;
-}
-</style>
-""", unsafe_allow_html=True)
+This app predicts whether a breast tumor is **Benign** or **Malignant** 
+based on features from a digitized image of a fine needle aspirate (FNA) of a breast mass.
+""")
 
-# ---------------- LOAD MODEL ----------------
-with open("best_ml_model.pkl", "rb") as f:
-    model = pickle.load(f)
+# --------------------------
+# Feature names
+# --------------------------
+feature_names = [
+    'radius_mean', 'texture_mean', 'perimeter_mean', 'area_mean',
+    'smoothness_mean', 'compactness_mean', 'concavity_mean',
+    'concave points_mean', 'symmetry_mean', 'fractal_dimension_mean',
+    'radius_se', 'texture_se', 'perimeter_se', 'area_se', 'smoothness_se',
+    'compactness_se', 'concavity_se', 'concave points_se', 'symmetry_se',
+    'fractal_dimension_se', 'radius_worst', 'texture_worst',
+    'perimeter_worst', 'area_worst', 'smoothness_worst',
+    'compactness_worst', 'concavity_worst', 'concave points_worst',
+    'symmetry_worst', 'fractal_dimension_worst'
+]
 
-# ---------------- TITLE ----------------
-st.markdown("<h1 style='text-align:center;'>🧬 Breast Cancer Prediction System</h1>", unsafe_allow_html=True)
-st.markdown(
-    "<p style='text-align:center;'>Enter tumor measurements to predict whether it is <b>Benign</b> or <b>Malignant</b></p>",
-    unsafe_allow_html=True
-)
-st.markdown("---")
+# --------------------------
+# CSV Upload Section
+# --------------------------
+st.sidebar.header("📂 Upload CSV Data (Optional)")
+uploaded_file = st.sidebar.file_uploader("Upload a CSV file containing feature data", type=["csv"])
 
-# ---------------- INPUT SECTION ----------------
-st.subheader("📊 Tumor Feature Inputs")
+default_values = []
 
-col1, col2, col3 = st.columns(3)
+if uploaded_file is not None:
+    try:
+        data = pd.read_csv(uploaded_file)
+        if all(col in data.columns for col in feature_names):
+            random_row = data.sample(1, random_state=random.randint(0, 9999))
+            default_values = random_row[feature_names].iloc[0].values
+            st.sidebar.success("✅ CSV uploaded successfully. Random row loaded as default values.")
+        else:
+            st.sidebar.error("❌ CSV missing required feature columns. Random values will be used instead.")
+            default_values = np.random.uniform(0.5, 15.0, size=len(feature_names))
+    except Exception as e:
+        st.sidebar.error(f"Error reading CSV: {e}. Random values will be used instead.")
+        default_values = np.random.uniform(0.5, 15.0, size=len(feature_names))
+else:
+    # Generate random values if no CSV uploaded
+    default_values = np.random.uniform(0.5, 15.0, size=len(feature_names))
 
-with col1:
-    st.markdown("### 📐 Size Features")
-    radius_mean = st.slider("Mean Radius", 5.0, 30.0, 14.0)
-    perimeter_mean = st.slider("Mean Perimeter", 40.0, 200.0, 90.0)
-    area_mean = st.slider("Mean Area", 100.0, 3000.0, 600.0)
+# --------------------------
+# Input fields for prediction
+# --------------------------
+st.header("🔢 Enter or adjust features for prediction")
+cols = st.columns(3)
+inputs = []
 
-with col2:
-    st.markdown("### 🧪 Texture Features")
-    texture_mean = st.slider("Mean Texture", 5.0, 40.0, 19.0)
-    smoothness_mean = st.slider("Mean Smoothness", 0.05, 0.3, 0.10)
-    symmetry_mean = st.slider("Mean Symmetry", 0.1, 0.4, 0.20)
+for i, feature in enumerate(feature_names):
+    default_value = float(default_values[i])
+    with cols[i % 3]:
+        value = st.number_input(f"{feature.replace('_', ' ').title()}", value=default_value, format="%.5f", key=f"input_{i}")
+        inputs.append(value)
 
-with col3:
-    st.markdown("### ⚙️ Shape & Complexity")
-    compactness_mean = st.slider("Mean Compactness", 0.0, 1.0, 0.20)
-    concavity_mean = st.slider("Mean Concavity", 0.0, 1.0, 0.20)
-    concave_points_mean = st.slider("Mean Concave Points", 0.0, 0.5, 0.10)
-    fractal_dimension_mean = st.slider("Mean Fractal Dimension", 0.01, 0.1, 0.05)
+# --------------------------
+# Prediction
+# --------------------------
+if st.button("🔍 Predict"):
+    try:
+        input_data = np.array(inputs).reshape(1, -1)
+        prediction = model.predict(input_data)[0]
 
-# ---------------- PREDICTION ----------------
-st.markdown("<br>")
+        # Show confidence if supported
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            prob = model.predict_proba(input_data)[0]
+            confidence = np.max(prob) * 100
 
-if st.button("🔍 Predict Cancer Type"):
-    input_data = np.array([[
-        radius_mean,
-        texture_mean,
-        perimeter_mean,
-        area_mean,
-        smoothness_mean,
-        compactness_mean,
-        concavity_mean,
-        concave_points_mean,
-        symmetry_mean,
-        fractal_dimension_mean
-    ]])
+        result = "Malignant" if prediction == 1 else "Benign"
 
-    prediction = model.predict(input_data)[0]
+        st.subheader("🩺 Prediction Result")
+        st.success(f"The tumor is predicted to be **{result}**.")
 
-    if prediction == 1:
-        st.markdown(
-            "<div class='result benign'>✅ Prediction: <b>Benign Tumor</b></div>",
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown(
-            "<div class='result malignant'>⚠️ Prediction: <b>Malignant Tumor</b></div>",
-            unsafe_allow_html=True
-        )
+        if confidence:
+            st.info(f"Model confidence: **{confidence:.2f}%**")
 
-# ---------------- FOOTER ----------------
-st.markdown("---")
-st.markdown(
-    "<p style='text-align:center; color:gray;'>Built using Machine Learning & Streamlit</p>",
-    unsafe_allow_html=True
-)
+    except Exception as e:
+        st.error(f"An error occurred during prediction: {e}")
