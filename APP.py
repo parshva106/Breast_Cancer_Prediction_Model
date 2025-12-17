@@ -9,94 +9,87 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS (BLACK + COLORFUL) ----------------
+# ---------------- DARK + COLORFUL THEME ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #0e0e0e;
+body, .main {
+    background-color: #0b0b0b;
 }
-.main {
-    background-color: #0e0e0e;
-}
-h1, h2, h3, h4 {
+h1, h2, h3 {
     color: #00e5ff;
 }
-p, label {
+label, p {
     color: #ffffff;
 }
-div[data-baseweb="input"] input {
-    background-color: #1c1c1c;
-    color: white;
-    border-radius: 8px;
-}
-div[data-baseweb="slider"] {
-    color: white;
-}
-.stButton > button {
+.stButton>button {
     background: linear-gradient(90deg, #ff00cc, #3333ff);
     color: white;
     font-size: 18px;
     border-radius: 12px;
-    padding: 0.6em 1.5em;
+    padding: 0.6em 1.8em;
     border: none;
 }
-.stButton > button:hover {
-    background: linear-gradient(90deg, #3333ff, #ff00cc);
+.stButton>button:hover {
     transform: scale(1.05);
 }
-.result-box {
+.result {
     padding: 25px;
     border-radius: 15px;
     font-size: 22px;
     text-align: center;
-    margin-top: 20px;
 }
-.success {
-    background-color: #003300;
+.benign {
+    background-color: #003d2b;
     color: #00ff99;
 }
-.danger {
-    background-color: #330000;
+.malignant {
+    background-color: #3d0000;
     color: #ff4c4c;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- LOAD MODEL ----------------
-with open("best_ml_model.pkl", "rb") as file:
-    model = pickle.load(file)
+with open("best_ml_model.pkl", "rb") as f:
+    model = pickle.load(f)
 
 # ---------------- TITLE ----------------
-st.markdown("<h1 style='text-align: center;'>🧬 Breast Cancer Prediction System</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>AI-powered model to predict whether a tumor is <b>Benign</b> or <b>Malignant</b></p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>🧬 Breast Cancer Prediction System</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align:center;'>Enter tumor measurements to predict whether it is <b>Benign</b> or <b>Malignant</b></p>",
+    unsafe_allow_html=True
+)
 st.markdown("---")
 
 # ---------------- INPUT SECTION ----------------
-st.subheader("📊 Enter Patient Details")
+st.subheader("📊 Tumor Feature Inputs")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    radius_mean = st.number_input("Radius Mean", 0.0, 50.0, 14.0)
-    texture_mean = st.number_input("Texture Mean", 0.0, 50.0, 19.0)
-    perimeter_mean = st.number_input("Perimeter Mean", 0.0, 200.0, 90.0)
-    area_mean = st.number_input("Area Mean", 0.0, 3000.0, 600.0)
+    st.markdown("### 📐 Size Features")
+    radius_mean = st.slider("Mean Radius", 5.0, 30.0, 14.0)
+    perimeter_mean = st.slider("Mean Perimeter", 40.0, 200.0, 90.0)
+    area_mean = st.slider("Mean Area", 100.0, 3000.0, 600.0)
 
 with col2:
-    smoothness_mean = st.number_input("Smoothness Mean", 0.0, 1.0, 0.1)
-    compactness_mean = st.number_input("Compactness Mean", 0.0, 1.0, 0.2)
-    concavity_mean = st.number_input("Concavity Mean", 0.0, 1.0, 0.2)
-    concave_points_mean = st.number_input("Concave Points Mean", 0.0, 1.0, 0.1)
+    st.markdown("### 🧪 Texture Features")
+    texture_mean = st.slider("Mean Texture", 5.0, 40.0, 19.0)
+    smoothness_mean = st.slider("Mean Smoothness", 0.05, 0.3, 0.10)
+    symmetry_mean = st.slider("Mean Symmetry", 0.1, 0.4, 0.20)
 
 with col3:
-    symmetry_mean = st.number_input("Symmetry Mean", 0.0, 1.0, 0.2)
-    fractal_dimension_mean = st.number_input("Fractal Dimension Mean", 0.0, 1.0, 0.05)
+    st.markdown("### ⚙️ Shape & Complexity")
+    compactness_mean = st.slider("Mean Compactness", 0.0, 1.0, 0.20)
+    concavity_mean = st.slider("Mean Concavity", 0.0, 1.0, 0.20)
+    concave_points_mean = st.slider("Mean Concave Points", 0.0, 0.5, 0.10)
+    fractal_dimension_mean = st.slider("Mean Fractal Dimension", 0.01, 0.1, 0.05)
 
 # ---------------- PREDICTION ----------------
-st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<br>")
 
 if st.button("🔍 Predict Cancer Type"):
-    features = np.array([[
+    input_data = np.array([[
         radius_mean,
         texture_mean,
         perimeter_mean,
@@ -109,22 +102,22 @@ if st.button("🔍 Predict Cancer Type"):
         fractal_dimension_mean
     ]])
 
-    prediction = model.predict(features)[0]
+    prediction = model.predict(input_data)[0]
 
     if prediction == 1:
         st.markdown(
-            "<div class='result-box success'>✅ Prediction: <b>Benign Tumor</b></div>",
+            "<div class='result benign'>✅ Prediction: <b>Benign Tumor</b></div>",
             unsafe_allow_html=True
         )
     else:
         st.markdown(
-            "<div class='result-box danger'>⚠️ Prediction: <b>Malignant Tumor</b></div>",
+            "<div class='result malignant'>⚠️ Prediction: <b>Malignant Tumor</b></div>",
             unsafe_allow_html=True
         )
 
 # ---------------- FOOTER ----------------
 st.markdown("---")
 st.markdown(
-    "<p style='text-align:center; color:gray;'>Made with ❤️ using Machine Learning & Streamlit</p>",
+    "<p style='text-align:center; color:gray;'>Built using Machine Learning & Streamlit</p>",
     unsafe_allow_html=True
 )
