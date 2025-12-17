@@ -8,7 +8,7 @@ The app is built using **Python**, **Scikit-learn**, and **Streamlit**, and supp
 ## 🚀 Live Demo
 
 🔗 **Streamlit App:**
-https://breastcancerpredictionmodel-njqtykfptq3n5hfzybuzsi.streamlit.app/
+https://breastcancerpredictionmodel-njqtykfptq3n5hfyzbuzsi.streamlit.app/
 
 ---
 
